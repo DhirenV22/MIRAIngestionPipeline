@@ -1,24 +1,24 @@
-import os
 import logging
+import azure.functions as func
 from crawler.crawler import crawl_site
 from crawler.download_docs import download_file
 from crawler.extract_text import extract_pdf_text, extract_docx_text
 from crawler.save_json import save_json
 from crawler.parse import parse_document
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
-BASE_URL = "https://www.metrostar.com"
-BENEFITS_PDF = (
-    "https://www.metrostar.com/wp-content/uploads/2025/04/Benefits-and-Perks-2025.pdf"
-)
+app = func.FunctionApp()
 
 
-def main():
+@app.function_name(name="IngestPipeline")
+@app.route(route="ingest", auth_level=func.AuthLevel.FUNCTION)
+def ingest_pipeline(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    HTTP-triggered function that initiates the ingestion pipeline.
+    """
     try:
+        BASE_URL = "https://www.metrostar.com"
+        BENEFITS_PDF = "https://www.metrostar.com/wp-content/uploads/2025/04/Benefits-and-Perks-2025.pdf"
+
         logging.info(f"Starting crawl at {BASE_URL}")
         all_links = crawl_site(BASE_URL, depth=2)
 
@@ -51,9 +51,7 @@ def main():
                         logging.error(f"Error processing file {file_path}: {e}")
         save_json(doc_texts, "mira_ingested_data.json")
         logging.info("Data ingestion completed successfully.")
+        return func.HttpResponse("Ingestion completed successfully.", status_code=200)
     except Exception as e:
         logging.critical(f"An unexpected error occurred: {e}")
-
-
-if __name__ == "__main__":
-    main()
+        return func.HttpResponse(f"An error occurred: {e}", status_code=500)

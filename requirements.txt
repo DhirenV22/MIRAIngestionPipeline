@@ -1,5 +1,5 @@
+azure-functions
 requests
 beautifulsoup4
 python-docx
 PyMuPDF
-playwright
